@@ -8,8 +8,8 @@ Hệ thống NexusAI Test Engine giao tiếp thông qua kiến trúc **RESTful A
 
 | Endpoint | Method | Mô tả chức năng | Tình trạng |
 |---|---|---|---|
-| `/api/health` | `GET` | Kiểm tra trạng thái máy chủ (Healthcheck) | Đã hoàn thành |
-| `/api/analyze` | `POST` | Phân tích URL, quét DOM và sinh Test Cases bằng AI | Đã hoàn thành |
+| `/api/health` | `GET` | Kiểm tra trạng thái máy chủ (Healthcheck) | Đang phát triển |
+| `/api/analyze` | `POST` | Phân tích URL, quét DOM và sinh Test Cases bằng AI | Đang phát triển |
 | `/api/execute` | `POST` | (Dự kiến) Khởi chạy bộ kiểm thử trực tiếp trên server | Đang phát triển |
 | `/api/reports` | `GET` | (Dự kiến) Lấy dữ liệu thống kê báo cáo kiểm thử | Đang phát triển |
 
