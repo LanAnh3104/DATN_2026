@@ -117,37 +117,6 @@ const Header = ({ user, showLoginDropdown, setShowLoginDropdown, onLogin, onLogo
                 <User size={16} /> {lang === 'VI' ? 'Đăng nhập' : 'Login'}
               </button>
 
-              <AnimatePresence>
-                {showLoginDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    className="absolute right-0 mt-4 w-[320px] bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white p-6 origin-top-right"
-                  >
-                    <div className="text-center mb-6">
-                      <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-600 flex items-center justify-center text-white shadow-lg mb-4 border-2 border-white">
-                        <Brain size={28} />
-                      </div>
-                      <h3 className="font-black text-slate-800 text-2xl tracking-tight mb-1">{lang === 'VI' ? 'Đăng nhập' : 'Login'}</h3>
-                      <p className="text-sm text-slate-500 font-medium">{lang === 'VI' ? 'Bắt đầu quá trình tự động hóa' : 'Start the automation process'}</p>
-                    </div>
-
-                    <button
-                      onClick={onLogin}
-                      className="group w-full bg-white border-2 border-slate-100 hover:border-blue-300 hover:bg-blue-50/50 text-slate-700 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-sm hover:shadow-md active:scale-95"
-                    >
-                      <GoogleIcon />
-                      <span className="group-hover:text-blue-600 transition-colors">{lang === 'VI' ? 'Tiếp tục với Google' : 'Continue with Google'}</span>
-                    </button>
-
-                    <p className="mt-5 text-[10px] text-center text-slate-400">
-                      Bằng cách đăng nhập, bạn đồng ý với Điều khoản và Chính sách của chúng tôi.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           )}
         </div>
@@ -201,7 +170,7 @@ const Hero = ({ onAction, lang }) => {
       </motion.div>
 
       <h1 className="text-6xl md:text-7xl lg:text-8xl font-black mb-8 tracking-tight text-white leading-tight">
-        {lang === 'VI' ? 'Tự động hóa' : 'Automate'} <br />
+        {lang === 'VI' ? 'Tự động hóa' : 'Automation'} <br />
         <span className="inline-block mt-2 py-2 relative">
           <span className="text-gradient drop-shadow-sm">{lang === 'VI' ? 'Kiểm Thử Web' : 'Web Testing'}</span>
           <motion.span
@@ -596,6 +565,55 @@ export default function App() {
           lang={lang}
           setLang={setLang}
         />
+
+        {/* Global Login Modal */}
+        <AnimatePresence>
+          {showLoginDropdown && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+                onClick={() => setShowLoginDropdown(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative w-full max-w-md bg-slate-900 border border-slate-700/50 rounded-[2rem] p-8 md:p-10 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden"
+              >
+                {/* Glow effects */}
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/20 blur-[50px] rounded-full pointer-events-none"></div>
+                <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-fuchsia-500/20 blur-[50px] rounded-full pointer-events-none"></div>
+
+                <button onClick={() => setShowLoginDropdown(false)} className="absolute top-5 right-5 text-slate-500 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-700 p-2 rounded-full backdrop-blur-sm z-20">
+                  <XCircle size={20} />
+                </button>
+
+                <div className="text-center mb-10 relative z-10">
+                  <div className="w-24 h-24 mx-auto rounded-[2rem] bg-gradient-to-br from-blue-600 to-fuchsia-600 flex items-center justify-center text-white shadow-[0_0_40px_rgba(37,99,235,0.4)] mb-6 border border-white/20">
+                    <Brain size={44} />
+                  </div>
+                  <h3 className="font-black text-white text-3xl tracking-tight mb-3">{lang === 'VI' ? 'Chào mừng trở lại!' : 'Welcome back!'}</h3>
+                  <p className="text-slate-400 font-medium text-sm px-4">{lang === 'VI' ? 'Đăng nhập để trải nghiệm hệ thống kiểm thử tự động hóa bằng AI.' : 'Sign in to experience the AI-powered automated testing system.'}</p>
+                </div>
+
+                <button
+                  onClick={handleLogin}
+                  className="group relative w-full bg-slate-800/80 border border-slate-700 hover:border-blue-500 hover:bg-slate-700 text-white font-bold py-4 px-4 rounded-2xl flex items-center justify-center gap-4 transition-all shadow-lg overflow-hidden active:scale-[0.98] z-10"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <GoogleIcon />
+                  <span className="relative z-10 text-[15px]">{lang === 'VI' ? 'Tiếp tục với Google' : 'Continue with Google'}</span>
+                </button>
+
+                <p className="mt-8 text-[11px] text-center text-slate-500 relative z-10 leading-relaxed">
+                  {lang === 'VI' ? 'Bằng cách đăng nhập, bạn đồng ý với' : 'By signing in, you agree to our'} <br />
+                  <a href="#" className="text-slate-300 hover:text-blue-400 hover:underline">{lang === 'VI' ? 'Điều khoản dịch vụ' : 'Terms of Service'}</a> & <a href="#" className="text-slate-300 hover:text-blue-400 hover:underline">{lang === 'VI' ? 'Chính sách bảo mật' : 'Privacy Policy'}</a>
+                </p>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Routes Setup */}
         <Routes>
