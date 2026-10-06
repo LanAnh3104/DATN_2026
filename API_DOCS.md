@@ -1,8 +1,29 @@
-# 📚 Tài liệu Đặc tả Giao diện Lập trình Ứng dụng (API Documentation)
+# 📚 Tài liệu Đặc tả Kỹ thuật (Frontend & Backend API)
 
-Hệ thống NexusAI Test Engine giao tiếp thông qua kiến trúc **RESTful API**, chuẩn hóa định dạng dữ liệu trả về theo chuẩn JSON. Tài liệu này cung cấp đặc tả kỹ thuật chi tiết cho các lập trình viên tích hợp hệ thống.
+Tài liệu này cung cấp đặc tả kỹ thuật chi tiết cho cả 2 phân hệ của hệ thống NexusAI Test Engine: **Frontend (Client-side)** và **Backend (RESTful API)**.
 
 ---
+
+## Phần 1: Đặc tả Frontend (Client-side)
+
+Phân hệ Frontend được xây dựng bằng React.js, đóng vai trò tương tác trực tiếp với người dùng và quản lý trạng thái (state management) toàn cục của ứng dụng.
+
+### 1. Cấu trúc Component cốt lõi
+- **`App` (Main Layout):** Quản lý trạng thái xác thực người dùng (Firebase Auth), điều phối các Route (`/`, `/suites`, `/analytics`, `/settings`), và chứa các background animation (Hexagons, CSS blobs).
+- **`Header` & `Footer`:** Chứa thanh điều hướng (Navigation), hiển thị thông tin User Profile, Nút đăng nhập/đăng xuất bằng Google.
+- **`Dashboard` (Page):** Màn hình chính nơi người dùng nhập URL. Bao gồm các thành phần con:
+  - **`Hero`:** Cung cấp ô Input nhập URL và nút "Phân Tích Bằng AI". Xử lý logic gọi API (Fetch) xuống Backend, quản lý trạng thái Loading (`isAnalyzing`).
+  - **`TestCaseCard`:** Component nhận dữ liệu (Props) từ Backend để hiển thị một kịch bản test (Tên, độ phức tạp, độ ưu tiên, steps). Hỗ trợ hover animation và đổ bóng (glow effects).
+  - **`ExecutionWidget`:** Bảng điều khiển giả lập việc kích hoạt chạy tất cả các test cases (Run All Tests) và xem log thực thi (Recent Activity).
+
+### 2. Giao tiếp Frontend - Backend
+- **Phương thức:** Giao tiếp qua giao thức HTTP (Fetch API).
+- **Quản lý lỗi:** Mọi luồng Fetch (`handleAnalyze`) đều được đặt trong khối `try-catch`. Nếu Backend sập hoặc trả về mảng dữ liệu lỗi, Frontend sẽ bắt và hiển thị popup (Alert) thân thiện cho người dùng.
+- **Xử lý bất đồng bộ:** Áp dụng `async/await` để chờ AI phân tích xong mới cập nhật DOM, kết hợp hiệu ứng Loading spinner để báo hiệu cho người dùng.
+
+---
+
+## Phần 2: Đặc tả Backend API (RESTful Services)
 
 ## 📌 Bảng tóm tắt các Endpoints
 
