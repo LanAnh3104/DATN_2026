@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
-import { Brain, Play, CheckCircle2, XCircle, Settings, ChevronRight, Activity, Terminal, Sparkles, Zap, LogOut, Code, Cpu, Globe, User, Loader2 } from 'lucide-react';
+import { Brain, Play, CheckCircle2, XCircle, Settings, ChevronRight, Activity, Terminal, Sparkles, Zap, LogOut, Code, Cpu, Globe, User, Loader2, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- DATA ---
@@ -381,21 +381,27 @@ const Footer = ({ lang }) => (
               Nexus<span className="text-blue-400">AI</span>
             </span>
           </div>
-          <p className="text-slate-400 text-sm max-w-sm leading-relaxed mb-6">
+          <p className="text-slate-400 text-base max-w-sm leading-relaxed mb-6">
             {lang === 'VI'
               ? 'Nền tảng kiểm thử tự động hóa bằng Trí tuệ nhân tạo. Tối ưu hóa quy trình, phát hiện lỗi nhanh chóng và xây dựng sản phẩm hoàn hảo.'
               : 'AI-powered automated testing platform. Optimize workflows, detect bugs instantly, and build flawless products.'}
           </p>
-          <div className="flex items-center gap-4 text-slate-400">
-            <Globe size={18} className="hover:text-white cursor-pointer transition-colors" />
-            <Terminal size={18} className="hover:text-white cursor-pointer transition-colors" />
-            <Code size={18} className="hover:text-white cursor-pointer transition-colors" />
+          <div className="flex items-center gap-5 text-slate-400 mt-2">
+            <a href="https://github.com/LanAnh3104/DATN_2026" target="_blank" rel="noreferrer" className="hover:text-blue-400 hover:scale-110 hover:drop-shadow-[0_0_10px_rgba(96,165,250,0.8)] transition-all cursor-pointer bg-slate-800/50 p-2.5 rounded-full border border-slate-700/50">
+              <Code size={18} />
+            </a>
+            <a href="#" className="hover:text-rose-400 hover:scale-110 hover:drop-shadow-[0_0_10px_rgba(251,113,133,0.8)] transition-all cursor-pointer bg-slate-800/50 p-2.5 rounded-full border border-slate-700/50">
+              <Play size={18} />
+            </a>
+            <a href="#" className="hover:text-fuchsia-400 hover:scale-110 hover:drop-shadow-[0_0_10px_rgba(232,121,249,0.8)] transition-all cursor-pointer bg-slate-800/50 p-2.5 rounded-full border border-slate-700/50">
+              <Mail size={18} />
+            </a>
           </div>
         </div>
 
         <div>
-          <h4 className="text-white font-bold mb-4">{lang === 'VI' ? 'Sản Phẩm' : 'Products'}</h4>
-          <ul className="space-y-2 text-sm text-slate-400">
+          <h4 className="text-white text-lg font-bold mb-4">{lang === 'VI' ? 'Sản Phẩm' : 'Products'}</h4>
+          <ul className="space-y-3 text-base text-slate-400">
             <li><Link to="/features" className="hover:text-blue-400 transition-colors">{lang === 'VI' ? 'Tính năng' : 'Features'}</Link></li>
             <li><Link to="/pricing" className="hover:text-blue-400 transition-colors">{lang === 'VI' ? 'Bảng giá' : 'Pricing'}</Link></li>
             <li><Link to="/cases" className="hover:text-blue-400 transition-colors">Case Studies</Link></li>
@@ -404,8 +410,8 @@ const Footer = ({ lang }) => (
         </div>
 
         <div>
-          <h4 className="text-white font-bold mb-4">{lang === 'VI' ? 'Công Ty' : 'Company'}</h4>
-          <ul className="space-y-2 text-sm text-slate-400">
+          <h4 className="text-white text-lg font-bold mb-4">{lang === 'VI' ? 'Công Ty' : 'Company'}</h4>
+          <ul className="space-y-3 text-base text-slate-400">
             <li><Link to="/about" className="hover:text-blue-400 transition-colors">{lang === 'VI' ? 'Về chúng tôi' : 'About us'}</Link></li>
             <li><Link to="/careers" className="hover:text-blue-400 transition-colors">{lang === 'VI' ? 'Tuyển dụng' : 'Careers'}</Link></li>
             <li><Link to="/blog" className="hover:text-blue-400 transition-colors">Blog</Link></li>
@@ -415,10 +421,10 @@ const Footer = ({ lang }) => (
       </div>
 
       <div className="border-t border-slate-800/50 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-        <p className="text-slate-500 text-xs">
+        <p className="text-slate-500 text-sm">
           © {new Date().getFullYear()} NexusAI Test Engine. {lang === 'VI' ? 'Đồ án tốt nghiệp.' : 'Graduation Project.'}
         </p>
-        <div className="flex gap-6 text-xs text-slate-500">
+        <div className="flex gap-6 text-sm text-slate-500">
           <Link to="/privacy" className="hover:text-white transition-colors">{lang === 'VI' ? 'Chính sách bảo mật' : 'Privacy Policy'}</Link>
           <Link to="/terms" className="hover:text-white transition-colors">{lang === 'VI' ? 'Điều khoản dịch vụ' : 'Terms of Service'}</Link>
         </div>
