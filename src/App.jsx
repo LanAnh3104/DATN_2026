@@ -169,7 +169,7 @@ const Hero = ({ onAction, lang }) => {
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-fuchsia-500">NexusAI Test Engine v2.0</span>
       </motion.div>
 
-      <h1 className="text-6xl md:text-7xl lg:text-8xl font-black mb-8 tracking-tight text-white leading-tight">
+      <h1 className="text-5xl md:text-6xl lg:text-7xl font-black mb-8 tracking-tight text-white leading-tight">
         {lang === 'VI' ? 'Tự động hóa' : 'Automation'} <br />
         <span className="inline-block mt-2 py-2 relative">
           <span className="text-gradient drop-shadow-sm">{lang === 'VI' ? 'Kiểm Thử Web' : 'Web Testing'}</span>
