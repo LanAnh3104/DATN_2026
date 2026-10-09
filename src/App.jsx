@@ -271,15 +271,21 @@ const TestCaseCard = ({ item, index }) => {
   );
 };
 
-const ExecutionWidget = ({ onAction, lang }) => {
+const ExecutionWidget = ({ onAction, lang, onRunAll }) => {
   const [isRunning, setIsRunning] = useState(false);
 
-  const handleRun = () => {
-    setIsRunning(true);
-    setTimeout(() => {
+  const handleRun = async () => {
+    if (onRunAll) {
+      setIsRunning(true);
+      await onRunAll();
       setIsRunning(false);
-      onAction();
-    }, 2000);
+    } else {
+      setIsRunning(true);
+      setTimeout(() => {
+        setIsRunning(false);
+        onAction();
+      }, 2000);
+    }
   };
 
   return (
@@ -418,7 +424,7 @@ const Footer = ({ lang }) => (
 );
 
 // --- PAGES ---
-const Dashboard = ({ handleProtectedAction, testCases, lang, onRunTest }) => (
+const Dashboard = ({ handleProtectedAction, testCases, lang, onRunTest, onRunAll }) => (
   <main className="max-w-7xl mx-auto px-6 pb-24 relative z-10">
     <Hero onAction={(data) => handleProtectedAction(data)} lang={lang} />
 
@@ -449,7 +455,7 @@ const Dashboard = ({ handleProtectedAction, testCases, lang, onRunTest }) => (
       </div>
 
       <div className="lg:col-span-4">
-        <ExecutionWidget onAction={handleProtectedAction} lang={lang} />
+        <ExecutionWidget onAction={handleProtectedAction} lang={lang} onRunAll={onRunAll} />
       </div>
     </div>
   </main>
@@ -546,6 +552,44 @@ export default function App() {
     } catch (err) {
       alert("Lỗi kết nối Backend: " + err.message);
     }
+  };
+
+  const handleRunAllTests = async () => {
+    if (!user) {
+      setShowLoginDropdown(true);
+      return;
+    }
+    if (!testCases || testCases.length === 0) {
+      alert("Chưa có Test Case nào để chạy. Vui lòng phân tích AI trước!");
+      return;
+    }
+    
+    alert(`Bắt đầu chạy tuần tự ${testCases.length} kịch bản...\nVui lòng xem bảng console hoặc chờ kết quả tổng hợp.`);
+    
+    let passed = 0;
+    let failed = 0;
+    
+    for (let i = 0; i < testCases.length; i++) {
+      const testCase = testCases[i];
+      console.log(`Đang chạy test ${i+1}/${testCases.length}: ${testCase.title}`);
+      try {
+        const res = await fetch('http://localhost:5000/api/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: targetUrl, testCase })
+        });
+        const data = await res.json();
+        if (data.success) {
+          passed++;
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        failed++;
+      }
+    }
+    
+    alert(`Đã chạy xong toàn bộ ${testCases.length} Test Cases!\n\nKết quả:\n✅ Thành công: ${passed}\n❌ Thất bại: ${failed}`);
   };
 
   const handleLogin = async () => {
@@ -658,7 +702,7 @@ export default function App() {
 
         {/* Routes Setup */}
         <Routes>
-          <Route path="/" element={<Dashboard handleProtectedAction={handleProtectedAction} testCases={testCases} lang={lang} onRunTest={handleRunTest} />} />
+          <Route path="/" element={<Dashboard handleProtectedAction={handleProtectedAction} testCases={testCases} lang={lang} onRunTest={handleRunTest} onRunAll={handleRunAllTests} />} />
           <Route path="/suites" element={<TestSuites />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<SettingsPage />} />

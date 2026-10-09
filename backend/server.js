@@ -58,7 +58,7 @@ app.post('/api/analyze', async (req, res) => {
       throw new Error("Chưa cấu hình GEMINI_API_KEY trong biến môi trường!");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
     const prompt = `Bạn là một kỹ sư Automation QA chuyên nghiệp.
 Dưới đây là cấu trúc DOM tóm tắt cào được từ trang ${url}:
 ${JSON.stringify(domStructure, null, 2)}
