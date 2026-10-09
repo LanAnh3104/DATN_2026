@@ -216,9 +216,12 @@ const Hero = ({ onAction, lang }) => {
   );
 };
 
-const TestCaseCard = ({ item }) => {
+const TestCaseCard = ({ item, index }) => {
   const [isHovered, setIsHovered] = useState(false);
   const isCritical = item.priority === 'Critical';
+
+  // Hiển thị dạng 01, 02 thay vì ID dài ngoằng (1791517701246)
+  const displayId = index ? String(index).padStart(2, '0') : String(item.id).padStart(2, '0');
 
   return (
     <motion.div
@@ -231,9 +234,9 @@ const TestCaseCard = ({ item }) => {
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-5">
           <div className="flex items-center gap-5">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black border-2 transition-all duration-300
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black border-2 transition-all duration-300 flex-shrink-0
               ${isHovered ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-transparent shadow-lg shadow-blue-500/30 -rotate-3 scale-110' : 'bg-white text-slate-400 border-slate-100 shadow-sm'}`}>
-              0{item.id}
+              {displayId}
             </div>
             <div>
               <h4 className="font-bold text-slate-800 text-xl group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-indigo-600 transition-all">{item.title}</h4>
@@ -245,11 +248,23 @@ const TestCaseCard = ({ item }) => {
             {item.priority}
           </span>
         </div>
-        <div className="pl-20 flex items-center gap-3 text-sm font-mono text-slate-500 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
-          <motion.div animate={{ x: isHovered ? [0, 5, 0] : 0 }} transition={{ duration: 1, repeat: Infinity }}>
+        <div className="pl-20 flex items-start gap-3 text-sm font-mono text-slate-500 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
+          <motion.div animate={{ x: isHovered ? [0, 5, 0] : 0 }} transition={{ duration: 1, repeat: Infinity }} className="mt-0.5">
             <Play size={14} className="text-blue-500 fill-current" />
           </motion.div>
-          {item.steps}
+          <div className="flex-1 leading-relaxed">
+            {item.steps}
+          </div>
+        </div>
+
+        {/* Nút chạy test */}
+        <div className="pl-20 mt-4 flex justify-end h-10">
+          <button
+            onClick={(e) => { e.stopPropagation(); if (item.onRun) item.onRun(item); }}
+            className={`px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all transform duration-300 ${isHovered ? 'translate-y-0 opacity-100 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:scale-105' : 'translate-y-4 opacity-0 pointer-events-none'}`}
+          >
+            <Play size={16} className="fill-current" /> Chạy Test
+          </button>
         </div>
       </div>
     </motion.div>
@@ -403,7 +418,7 @@ const Footer = ({ lang }) => (
 );
 
 // --- PAGES ---
-const Dashboard = ({ handleProtectedAction, testCases, lang }) => (
+const Dashboard = ({ handleProtectedAction, testCases, lang, onRunTest }) => (
   <main className="max-w-7xl mx-auto px-6 pb-24 relative z-10">
     <Hero onAction={(data) => handleProtectedAction(data)} lang={lang} />
 
@@ -427,8 +442,8 @@ const Dashboard = ({ handleProtectedAction, testCases, lang }) => (
           animate="show"
           className="space-y-5"
         >
-          {testCases.map((item) => (
-            <TestCaseCard key={item.id} item={item} />
+          {testCases.map((item, index) => (
+            <TestCaseCard key={item.id} item={{ ...item, onRun: onRunTest }} index={index + 1} />
           ))}
         </motion.div>
       </div>
@@ -484,6 +499,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [showLoginDropdown, setShowLoginDropdown] = useState(false);
   const [testCases, setTestCases] = useState(MOCK_CASES); // Lưu trữ state của Test Cases
+  const [targetUrl, setTargetUrl] = useState('https://google.com'); // Lưu URL đang test
+  const [execResult, setExecResult] = useState(null); // Lưu kết quả trả về từ backend
   const [lang, setLang] = useState('VI');
 
   useEffect(() => {
@@ -500,10 +517,34 @@ export default function App() {
     } else {
       if (data && data.testCases) {
         setTestCases(data.testCases);
+        if (data.urlAnalyzed) setTargetUrl(data.urlAnalyzed);
         alert(`AI đã phân tích xong URL: ${data.urlAnalyzed}\nSinh ra thành công ${data.testCases.length} Test Cases!`);
       } else {
         alert("Hành động chạy test đã được kích hoạt thành công!");
       }
+    }
+  };
+
+  const handleRunTest = async (testCase) => {
+    if (!user) {
+      setShowLoginDropdown(true);
+      return;
+    }
+    try {
+      alert(`Đang khởi chạy Test Case: ${testCase.title}...\n(Backend đang bật trình duyệt, vui lòng đợi vài giây!)`);
+      const res = await fetch('http://localhost:5000/api/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: targetUrl, testCase })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setExecResult(data);
+      } else {
+        alert("Lỗi chạy test: " + data.error);
+      }
+    } catch (err) {
+      alert("Lỗi kết nối Backend: " + err.message);
     }
   };
 
@@ -617,7 +658,7 @@ export default function App() {
 
         {/* Routes Setup */}
         <Routes>
-          <Route path="/" element={<Dashboard handleProtectedAction={handleProtectedAction} testCases={testCases} lang={lang} />} />
+          <Route path="/" element={<Dashboard handleProtectedAction={handleProtectedAction} testCases={testCases} lang={lang} onRunTest={handleRunTest} />} />
           <Route path="/suites" element={<TestSuites />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<SettingsPage />} />
@@ -625,6 +666,36 @@ export default function App() {
 
         <Footer lang={lang} />
       </div>
+
+      {/* Modal hiển thị kết quả Test (Screenshot) */}
+      <AnimatePresence>
+        {execResult && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
+              onClick={() => setExecResult(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-2xl overflow-hidden flex flex-col"
+            >
+              <button onClick={() => setExecResult(null)} className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors bg-slate-800 p-2 rounded-full z-20">
+                <XCircle size={20} />
+              </button>
+              <h3 className="font-black text-white text-2xl mb-2">Kết quả Test: {execResult.message}</h3>
+              <div className="text-emerald-400 text-sm mb-4 font-mono">
+                {execResult.logs?.map((log, i) => <div key={i}>&gt; {log}</div>)}
+              </div>
+              <div className="flex-1 rounded-xl overflow-hidden border border-slate-700/50 bg-slate-950 flex items-center justify-center">
+                <img src={execResult.screenshot} alt="Test Result Screenshot" className="max-h-[60vh] object-contain shadow-lg" />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </Router>
   );
 }
