@@ -68,8 +68,12 @@ const Header = ({ user, showLoginDropdown, setShowLoginDropdown, onLogin, onLogo
 
         <nav className="hidden md:flex items-center gap-12 text-base font-bold">
           <NavLink to="/" className={({ isActive }) => isActive ? activeClass : inactiveClass}>{lang === 'VI' ? 'Tổng quan' : 'Dashboard'}</NavLink>
-          <NavLink to="/suites" className={({ isActive }) => isActive ? activeClass : inactiveClass}>{lang === 'VI' ? 'Quản lý Test' : 'Test Suites'}</NavLink>
+          <NavLink to="/suites" className={({ isActive }) => isActive ? activeClass : inactiveClass}>{lang === 'VI' ? 'Dự án' : 'Projects'}</NavLink>
+          <NavLink to="/history" className={({ isActive }) => isActive ? activeClass : inactiveClass}>{lang === 'VI' ? 'Lịch sử' : 'History'}</NavLink>
           <NavLink to="/analytics" className={({ isActive }) => isActive ? activeClass : inactiveClass}>{lang === 'VI' ? 'Thống kê' : 'Analytics'}</NavLink>
+          {user?.dbRole === 'admin' && (
+            <NavLink to="/admin" className={({ isActive }) => isActive ? activeClass : inactiveClass}>{lang === 'VI' ? 'Quản trị' : 'Admin Panel'}</NavLink>
+          )}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -100,7 +104,11 @@ const Header = ({ user, showLoginDropdown, setShowLoginDropdown, onLogin, onLogo
               <div className="absolute right-0 mt-3 w-56 py-2 bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform origin-top-right scale-95 group-hover:scale-100">
                 <div className="px-5 py-3 border-b border-slate-100 mb-1 bg-slate-50/50 rounded-t-xl">
                   <p className="text-sm font-bold text-slate-800 truncate">{user.displayName || "Tester"}</p>
-                  <p className="text-xs text-slate-500 truncate">{user.email || "tester@gmail.com"}</p>
+                  <p className="text-xs text-slate-500 truncate mb-2">{user.email || "tester@gmail.com"}</p>
+                  <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider border border-blue-200">
+                    <User size={12} />
+                    {user.dbRole === 'admin' ? (lang === 'VI' ? 'Quản trị viên' : 'Administrator') : (lang === 'VI' ? 'Kỹ sư QA (User)' : 'QA Engineer')}
+                  </div>
                 </div>
                 <button onClick={onLogout} className="w-full text-left px-5 py-3 text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-3 transition-colors">
                   <LogOut size={16} />
@@ -461,12 +469,110 @@ const Dashboard = ({ handleProtectedAction, testCases, lang, onRunTest, onRunAll
   </main>
 );
 
-const TestSuites = () => (
+const TestSuites = ({ user }) => {
+  const [projects, setProjects] = useState([]);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectUrl, setNewProjectUrl] = useState('');
+
+  useEffect(() => {
+    if (user?.uid) {
+      fetch(`http://localhost:5000/api/projects/${user.uid}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setProjects(data.projects);
+        });
+    }
+  }, [user]);
+
+  const handleAddProject = async (e) => {
+    e.preventDefault();
+    if (!newProjectName || !newProjectUrl) return;
+    try {
+      const res = await fetch('http://localhost:5000/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newProjectName, targetUrl: newProjectUrl, owner: user.uid, description: 'Test Project' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProjects([data.project, ...projects]);
+        setNewProjectName('');
+        setNewProjectUrl('');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Bạn có chắc muốn xóa dự án này? (Sẽ xóa luôn toàn bộ Test Case bên trong)")) {
+      try {
+        await fetch(`http://localhost:5000/api/projects/${id}`, { method: 'DELETE' });
+        setProjects(projects.filter(p => p._id !== id));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  return (
+    <main className="max-w-7xl mx-auto px-6 pb-24 pt-32 relative z-10 min-h-screen">
+      <div className="glass-panel p-10 rounded-3xl bg-slate-900/60 border border-slate-700">
+        <h1 className="text-4xl font-black text-white mb-6 flex items-center gap-3">
+          <Terminal className="text-blue-500" /> Quản lý Dự Án Kiểm Thử
+        </h1>
+        
+        {user ? (
+          <div className="space-y-8">
+            <form onSubmit={handleAddProject} className="flex gap-4 p-6 bg-slate-800/50 rounded-xl border border-slate-700">
+              <input type="text" placeholder="Tên dự án (VD: Shopee Clone)" value={newProjectName} onChange={e => setNewProjectName(e.target.value)} className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 text-white focus:outline-none focus:border-blue-500" />
+              <input type="url" placeholder="URL trang web..." value={newProjectUrl} onChange={e => setNewProjectUrl(e.target.value)} className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 text-white focus:outline-none focus:border-blue-500" />
+              <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Tạo Dự Án Mới</button>
+            </form>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map(p => (
+                <div key={p._id} className="p-6 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-500 transition-colors relative group">
+                  <h3 className="text-xl font-bold text-white mb-2">{p.name}</h3>
+                  <p className="text-sm text-slate-400 mb-4">{p.targetUrl}</p>
+                  <button onClick={() => handleDelete(p._id)} className="absolute top-4 right-4 text-slate-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                    <XCircle size={20} />
+                  </button>
+                  <div className="mt-4 flex gap-2">
+                     <span className="text-xs font-mono bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Chưa chạy test</span>
+                  </div>
+                </div>
+              ))}
+              {projects.length === 0 && <div className="col-span-full text-center py-10 text-slate-500">Chưa có dự án nào. Hãy tạo một dự án mới.</div>}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-20">
+            <h2 className="text-2xl text-slate-400 font-bold mb-4">Vui lòng đăng nhập để xem danh sách dự án.</h2>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+};
+
+const History = () => (
   <main className="max-w-7xl mx-auto px-6 pb-24 pt-32 relative z-10 min-h-screen">
     <div className="glass-panel p-10 rounded-3xl bg-slate-900/60 border border-slate-700">
-      <h1 className="text-4xl font-black text-white mb-6">Quản lý Test</h1>
-      <p className="text-slate-400">Trang này sẽ hiển thị toàn bộ danh sách các tập kịch bản kiểm thử của bạn.</p>
-      {/* Placeholder content */}
+      <h1 className="text-4xl font-black text-white mb-6">Lịch sử Chạy Test</h1>
+      <p className="text-slate-400">Xem lại báo cáo của những lần thực thi trước đây.</p>
+      <div className="mt-8 border-2 border-dashed border-slate-600 rounded-xl h-64 flex items-center justify-center text-slate-500">
+        Tính năng đang được phát triển...
+      </div>
+    </div>
+  </main>
+);
+
+const AdminPanel = () => (
+  <main className="max-w-7xl mx-auto px-6 pb-24 pt-32 relative z-10 min-h-screen">
+    <div className="glass-panel p-10 rounded-3xl bg-slate-900/60 border border-slate-700">
+      <h1 className="text-4xl font-black text-white mb-6 text-fuchsia-400">Bảng Điều Khiển Quản Trị Viên</h1>
+      <p className="text-slate-400">Khu vực dành riêng cho Admin quản lý toàn bộ hệ thống.</p>
       <div className="mt-8 border-2 border-dashed border-slate-600 rounded-xl h-64 flex items-center justify-center text-slate-500">
         Tính năng đang được phát triển...
       </div>
@@ -510,8 +616,32 @@ export default function App() {
   const [lang, setLang] = useState('VI');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        try {
+          const res = await fetch('http://localhost:5000/api/users/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName,
+              photoURL: currentUser.photoURL
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            setUser({ ...currentUser, dbRole: data.user.role });
+          } else {
+            setUser(currentUser);
+          }
+        } catch (err) {
+          console.error("Lỗi đồng bộ User DB:", err);
+          setUser(currentUser);
+        }
+      } else {
+        setUser(null);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -703,9 +833,11 @@ export default function App() {
         {/* Routes Setup */}
         <Routes>
           <Route path="/" element={<Dashboard handleProtectedAction={handleProtectedAction} testCases={testCases} lang={lang} onRunTest={handleRunTest} onRunAll={handleRunAllTests} />} />
-          <Route path="/suites" element={<TestSuites />} />
+          <Route path="/suites" element={<TestSuites user={user} />} />
+          <Route path="/history" element={<History />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/admin" element={user?.dbRole === 'admin' ? <AdminPanel /> : <div className="text-center pt-32 text-white">403 - Forbidden</div>} />
         </Routes>
 
         <Footer lang={lang} />
