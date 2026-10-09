@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 const { chromium } = require('playwright');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -11,8 +12,107 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Kết nối MongoDB
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ Đã kết nối thành công tới MongoDB!'))
+  .catch(err => console.error('❌ Lỗi kết nối MongoDB:', err));
+
 // Khởi tạo Gemini AI (Sẽ cần API Key)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Khai báo các Models
+const User = require('./models/User');
+const Project = require('./models/Project');
+const TestCase = require('./models/TestCase');
+
+// API Đồng bộ User từ Frontend
+app.post('/api/users/sync', async (req, res) => {
+  try {
+    const { uid, email, displayName, photoURL } = req.body;
+    let user = await User.findOne({ uid });
+    if (!user) {
+      user = new User({ uid, email, displayName, photoURL, role: 'qa_engineer' });
+      await user.save();
+      console.log(`[DB] Đã tạo User mới: ${email}`);
+    } else {
+      user.lastLogin = Date.now();
+      await user.save();
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// --- MODULE 2: PROJECT CRUD ---
+app.get('/api/projects/:userId', async (req, res) => {
+  try {
+    const projects = await Project.find({ owner: req.params.userId }).sort({ createdAt: -1 });
+    res.json({ success: true, projects });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/projects', async (req, res) => {
+  try {
+    const { name, targetUrl, owner, description } = req.body;
+    const newProject = new Project({ name, targetUrl, owner, description });
+    await newProject.save();
+    res.json({ success: true, project: newProject });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+  try {
+    await Project.findByIdAndDelete(req.params.id);
+    await TestCase.deleteMany({ project: req.params.id }); 
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// --- MODULE 3: TEST CASE CRUD ---
+app.get('/api/testcases/:projectId', async (req, res) => {
+  try {
+    const testCases = await TestCase.find({ project: req.params.projectId }).sort({ createdAt: -1 });
+    res.json({ success: true, testCases });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/testcases', async (req, res) => {
+  try {
+    const { title, priority, complex, steps, project, author } = req.body;
+    const newTestCase = new TestCase({ title, priority, complex, steps, project, author });
+    await newTestCase.save();
+    res.json({ success: true, testCase: newTestCase });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/testcases/:id', async (req, res) => {
+  try {
+    const updatedTestCase = await TestCase.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json({ success: true, testCase: updatedTestCase });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/testcases/:id', async (req, res) => {
+  try {
+    await TestCase.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend is running!', version: '1.0.0' });
