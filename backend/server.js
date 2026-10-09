@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Khởi tạo Gemini AI (Sẽ cần API Key)
-// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend is running!', version: '1.0.0' });
@@ -31,10 +31,10 @@ app.post('/api/analyze', async (req, res) => {
     // 1. Mở Playwright để cào DOM cơ bản
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
-    
+
     // Set timeout 15s để tránh treo server
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    
+
     // Cào các element quan trọng: forms, inputs, buttons, links
     const domStructure = await page.evaluate(() => {
       const inputs = Array.from(document.querySelectorAll('input')).map(el => ({ type: el.type, name: el.name, placeholder: el.placeholder }));
@@ -51,41 +51,36 @@ app.post('/api/analyze', async (req, res) => {
     await browser.close();
     console.log(`[2] Cào DOM thành công. Dữ liệu:`, domStructure);
 
-    // 2. Gửi dữ liệu DOM cho AI để phân tích (Hiện tại đang Hardcode, sẽ gắn Gemini vào sau)
+    // 2. Gửi dữ liệu DOM cho AI để phân tích
     console.log(`[3] Đang gửi dữ liệu cho AI phân tích...`);
-    
-    /* 
-      // TODO: Tích hợp Prompt thật với Gemini AI ở đây
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const prompt = `Bạn là một kỹ sư QA. Hãy phân tích cấu trúc DOM sau và sinh ra 3 kịch bản test case (Test Suites)...`;
-      const result = await model.generateContent(prompt);
-      const aiResponse = result.response.text(); 
-    */
 
-    // Dữ liệu giả lập (Mock) trả về cho đến khi có API Key
-    const generatedTestCases = [
-      { 
-        id: Date.now(), 
-        title: `Kiểm tra hiển thị trang chủ: ${domStructure.title}`, 
-        priority: 'Critical', 
-        complex: 'Low', 
-        steps: `navigate(${url}) → assert(title === "${domStructure.title}")` 
-      },
-      { 
-        id: Date.now() + 1, 
-        title: `Phân tích tương tác các Buttons (${domStructure.buttons.length} tìm thấy)`, 
-        priority: 'Standard', 
-        complex: 'Medium', 
-        steps: `navigate(${url}) → click(button) → wait(networkidle)` 
-      },
-      { 
-        id: Date.now() + 2, 
-        title: `Kiểm tra form Inputs (${domStructure.inputs.length} fields)`, 
-        priority: 'Critical', 
-        complex: 'High', 
-        steps: `navigate(${url}) → fill(inputs) → submit() → assert(success)` 
-      }
-    ];
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("Chưa cấu hình GEMINI_API_KEY trong biến môi trường!");
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const prompt = `Bạn là một kỹ sư Automation QA chuyên nghiệp.
+Dưới đây là cấu trúc DOM tóm tắt cào được từ trang ${url}:
+${JSON.stringify(domStructure, null, 2)}
+
+Hãy suy luận chức năng của trang này và tự động tạo ra một danh sách các kịch bản kiểm thử (Test Cases) phù hợp (khoảng 3-6 kịch bản).
+Yêu cầu bắt buộc: Trả về KẾT QUẢ DUY NHẤT LÀ JSON ARRAY CHUẨN. KHÔNG CÓ BẤT KỲ VĂN BẢN NÀO KHÁC BÊN NGOÀI JSON. KHÔNG DÙNG MARKDOWN BLOCK (\`\`\`json).
+Mỗi test case là một JSON Object gồm các thuộc tính:
+{
+  "id": <chỉ để số tự nhiên ngẫu nhiên lớn như 1712000000>,
+  "title": "<Tên kịch bản tiếng Việt ngắn gọn>",
+  "priority": "<Chọn 1 trong: Critical, High, Standard, Low>",
+  "complex": "<Chọn 1 trong: High, Medium, Low>",
+  "steps": "<Dạng chuỗi: navigate(...) → click(...) → assert(...)>"
+}`;
+
+    const result = await model.generateContent(prompt);
+    let aiResponse = result.response.text();
+
+    // Dọn dẹp chuỗi trả về để tránh lỗi JSON parse nếu AI vô tình xuất markdown
+    aiResponse = aiResponse.replace(/^\`\`\`(json)?/gm, '').replace(/\`\`\`$/gm, '').trim();
+
+    const generatedTestCases = JSON.parse(aiResponse);
 
     console.log(`[4] Hoàn tất. Trả kết quả về Frontend.`);
     res.json({
@@ -112,17 +107,17 @@ app.post('/api/execute', async (req, res) => {
 
   try {
     console.log(`[EXEC] Bắt đầu chạy test: ${testCase.title}`);
-    
+
     // 1. Khởi tạo Playwright
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
-    
+
     // 2. Mở trang web cần test
     console.log(`[EXEC] Đang truy cập URL: ${url}`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    
+
     // TODO: (Các bước tiếp theo) Sẽ parse chuỗi testCase.steps (VD: click, fill) để giả lập hành động ở đây
-    
+
     // 3. Chụp ảnh màn hình làm "bằng chứng" (Proof of test)
     const screenshotBuffer = await page.screenshot();
     const screenshotBase64 = screenshotBuffer.toString('base64');
