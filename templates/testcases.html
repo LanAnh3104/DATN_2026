@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản Lý Test Cases - NexusAI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i data-lucide="check-square" class="w-5 h-5 text-purple-400"></i>
+                Module 3: Quản Lý Test Cases (CRUD)
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Tự tay thêm mới, chỉnh sửa, lọc theo dự án hoặc xem các kịch bản AI đã sinh</p>
+        </div>
+
+        <button onclick="document.getElementById('addTestCaseModal').classList.remove('hidden')" 
+                class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg flex items-center gap-2 transition">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Thêm Test Case Bằng Tay
+        </button>
+    </div>
+
+    <!-- Filter by Project -->
+    <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-400">Lọc theo dự án:</span>
+        <a href="{% url 'testcases' %}" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-800 {% if not selected_project_id %}bg-purple-600/20 text-purple-300 border-purple-500/40{% else %}text-gray-400 hover:bg-gray-800{% endif %}">
+            Tất cả
+        </a>
+        {% for p in projects %}
+        <a href="{% url 'testcases' %}?project={{ p.id }}" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-800 {% if selected_project_id == p.id %}bg-purple-600/20 text-purple-300 border-purple-500/40{% else %}text-gray-400 hover:bg-gray-800{% endif %}">
+            {{ p.name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Table of Test Cases -->
+    <div class="glass-panel rounded-2xl border border-gray-800 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-gray-900/60 text-gray-400 uppercase tracking-wider border-b border-gray-800">
+                    <tr>
+                        <th class="py-3 px-4">Tên Test Case</th>
+                        <th class="py-3 px-4">Dự Án</th>
+                        <th class="py-3 px-4">CSS Selector</th>
+                        <th class="py-3 px-4">Hành Động</th>
+                        <th class="py-3 px-4">Mức Độ</th>
+                        <th class="py-3 px-4">Trạng Thái</th>
+                        <th class="py-3 px-4 text-right">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800 text-gray-300">
+                    {% for tc in test_cases %}
+                    <tr class="hover:bg-gray-800/40 transition">
+                        <td class="py-3 px-4 font-medium text-white">{{ tc.name }}</td>
+                        <td class="py-3 px-4 text-purple-400">{{ tc.project.name|default:"Chung" }}</td>
+                        <td class="py-3 px-4 font-mono text-gray-400">{{ tc.selector }}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 rounded bg-gray-800 text-gray-300 font-mono">{{ tc.action }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            {% if tc.severity == 'CRITICAL' %}
+                                <span class="text-red-400 font-semibold">CRITICAL</span>
+                            {% elif tc.severity == 'HIGH' %}
+                                <span class="text-amber-400 font-semibold">HIGH</span>
+                            {% else %}
+                                <span class="text-blue-400">MEDIUM</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4">
+                            {% if tc.status == 'PASSED' %}
+                                <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">PASSED</span>
+                            {% elif tc.status == 'FAILED' %}
+                                <span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-medium">FAILED</span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 font-medium">PENDING</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <a href="{% url 'delete_testcase' tc.id %}" onclick="return confirm('Bạn có chắc muốn xóa test case này?');" 
+                               class="text-gray-500 hover:text-red-400 p-1 inline-block">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-gray-500">
+                            Chưa có test case nào trong danh sách.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Test Case -->
+<div id="addTestCaseModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-white text-base">Thêm Kịch Bản Test Bằng Tay</h3>
+            <button onclick="document.getElementById('addTestCaseModal').classList.add('hidden')" class="text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form method="POST" action="{% url 'testcases' %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action_type" value="create">
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Dự án áp dụng</label>
+                <select name="project_id" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                    <option value="">-- Để trống (Dùng chung) --</option>
+                    {% for p in projects %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Tên Kịch Bản Test</label>
+                <input type="text" name="name" required placeholder="Ví dụ: Kiểm tra nút Submit" 
+                       class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">CSS Selector phần tử</label>
+                <input type="text" name="selector" required placeholder="#btn-submit hoặc button[type='submit']" 
+                       class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 font-mono">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Hành động</label>
+                    <select name="action" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                        <option value="click">click</option>
+                        <option value="fill">fill (nhập text)</option>
+                        <option value="hover">hover</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Mức độ ưu tiên</label>
+                    <select name="severity" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                        <option value="MEDIUM">MEDIUM</option>
+                        <option value="HIGH">HIGH</option>
+                        <option value="CRITICAL">CRITICAL</option>
+                        <option value="LOW">LOW</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Giá trị nhập (nếu hành động là fill)</label>
+                <input type="text" name="value" placeholder="admin@example.com" 
+                       class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('addTestCaseModal').classList.add('hidden')" 
+                        class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs rounded-lg">Hủy</button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg">Lưu Test Case</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

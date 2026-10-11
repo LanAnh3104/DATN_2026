@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NexusAI - QA Automation Studio{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sidebar-item-active {
+            background: linear-gradient(90deg, rgba(124, 58, 237, 0.2) 0%, rgba(124, 58, 237, 0.05) 100%);
+            border-left: 3px solid #8b5cf6;
+            color: #fff;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="h-16 border-b border-gray-800 bg-gray-950/80 backdrop-blur sticky top-0 z-50 flex items-center justify-between px-6">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <i data-lucide="bot" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-white tracking-wide">NexusAI <span class="text-xs bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded-full font-normal">Django v5.1</span></h1>
+                <p class="text-xs text-gray-400">Autonomous QA Automation Studio</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Playwright Python Engine
+            </span>
+            <div class="flex items-center gap-2 border-l border-gray-800 pl-4">
+                <div class="w-8 h-8 rounded-full bg-purple-600/30 border border-purple-500/40 flex items-center justify-center font-bold text-xs text-purple-300">
+                    QA
+                </div>
+                <div class="text-xs">
+                    <p class="font-semibold text-gray-200">Admin User</p>
+                    <p class="text-gray-500">QA Engineer</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 border-r border-gray-800 bg-gray-950/40 p-4 flex flex-col gap-1">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 px-3 py-2">
+                Hệ Thống 8 Modules
+            </div>
+
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition text-gray-300 hover:bg-gray-800/60 {% if active_page == 'dashboard' %}sidebar-item-active{% endif %}">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                <span>1. Tổng Quan & AI Test</span>
+            </a>
+
+            <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition text-gray-300 hover:bg-gray-800/60 {% if active_page == 'projects' %}sidebar-item-active{% endif %}">
+                <i data-lucide="folder-kanban" class="w-4 h-4"></i>
+                <span>2. Quản Lý Dự Án</span>
+            </a>
+
+            <a href="{% url 'testcases' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition text-gray-300 hover:bg-gray-800/60 {% if active_page == 'testcases' %}sidebar-item-active{% endif %}">
+                <i data-lucide="check-square" class="w-4 h-4"></i>
+                <span>3. Quản Lý Test Cases</span>
+            </a>
+
+            <a href="{% url 'history' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition text-gray-300 hover:bg-gray-800/60 {% if active_page == 'history' %}sidebar-item-active{% endif %}">
+                <i data-lucide="history" class="w-4 h-4"></i>
+                <span>4. Lịch Sử Thực Thi</span>
+            </a>
+
+            <a href="{% url 'analytics' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition text-gray-300 hover:bg-gray-800/60 {% if active_page == 'analytics' %}sidebar-item-active{% endif %}">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                <span>5. Thống Kê & Báo Cáo</span>
+            </a>
+
+            <div class="border-t border-gray-800/80 my-2"></div>
+
+            <a href="/admin/" target="_blank" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition text-gray-400 hover:bg-purple-900/20 hover:text-purple-300">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <span>6. Django Admin Panel</span>
+                </div>
+                <i data-lucide="external-link" class="w-3.5 h-3.5 text-gray-500"></i>
+            </a>
+
+            <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition text-gray-300 hover:bg-gray-800/60 {% if active_page == 'settings' %}sidebar-item-active{% endif %}">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                <span>7. Cấu Hình & API Key</span>
+            </a>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-8 overflow-y-auto max-w-7xl">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

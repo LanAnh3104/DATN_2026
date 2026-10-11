@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Thống Kê & Báo Cáo - NexusAI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-5 h-5 text-purple-400"></i>
+            Module 5: Thống Kê & Báo Cáo Kiểm Thử (Analytics)
+        </h2>
+        <p class="text-xs text-gray-400 mt-1">Biểu đồ trực quan hóa dữ liệu test cases và mức độ nghiêm trọng</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Status Donut Chart -->
+        <div class="glass-panel p-6 rounded-2xl border border-gray-800 flex flex-col items-center">
+            <h3 class="font-bold text-sm text-gray-200 mb-4 self-start">Tỷ Lệ Trạng Thái Test Cases</h3>
+            <div class="w-64 h-64">
+                <canvas id="statusChart"></canvas>
+            </div>
+            <div class="flex gap-6 mt-4 text-xs">
+                <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Passed ({{ passed }})</span>
+                <span class="flex items-center gap-1.5 text-red-400"><span class="w-3 h-3 rounded-full bg-red-500"></span> Failed ({{ failed }})</span>
+                <span class="flex items-center gap-1.5 text-gray-400"><span class="w-3 h-3 rounded-full bg-gray-500"></span> Pending ({{ pending }})</span>
+            </div>
+        </div>
+
+        <!-- Severity Bar Chart -->
+        <div class="glass-panel p-6 rounded-2xl border border-gray-800">
+            <h3 class="font-bold text-sm text-gray-200 mb-4">Phân Bổ Theo Mức Độ Nghiêm Trọng</h3>
+            <div class="h-64">
+                <canvas id="severityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Status Donut Chart
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+            labels: ['Passed', 'Failed', 'Pending'],
+            datasets: [{
+                data: [{{ passed }}, {{ failed }}, {{ pending }}],
+                backgroundColor: ['#10b981', '#ef4444', '#6b7280'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Severity Bar Chart
+    const ctxSeverity = document.getElementById('severityChart').getContext('2d');
+    new Chart(ctxSeverity, {
+        type: 'bar',
+        data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+                label: 'Số lượng test cases',
+                data: {{ severity_data|safe }},
+                backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#9ca3af', precision: 0 },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                x: {
+                    ticks: { color: '#9ca3af' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

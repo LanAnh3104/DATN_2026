@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - NexusAI QA Studio{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="glass-panel p-5 rounded-xl border border-gray-800">
+            <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+                <span>DỰ ÁN KIỂM THỬ</span>
+                <i data-lucide="folder" class="w-4 h-4 text-purple-400"></i>
+            </div>
+            <p class="text-2xl font-bold text-white mt-2">{{ total_projects }}</p>
+            <p class="text-xs text-gray-500 mt-1">Đã cấu hình</p>
+        </div>
+
+        <div class="glass-panel p-5 rounded-xl border border-gray-800">
+            <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+                <span>TỔNG TEST CASES</span>
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-blue-400"></i>
+            </div>
+            <p class="text-2xl font-bold text-white mt-2">{{ total_tests }}</p>
+            <p class="text-xs text-gray-500 mt-1">Trong Database</p>
+        </div>
+
+        <div class="glass-panel p-5 rounded-xl border border-gray-800">
+            <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+                <span>TỶ LỆ PASS</span>
+                <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <p class="text-2xl font-bold text-emerald-400 mt-2">{{ pass_rate }}%</p>
+            <p class="text-xs text-gray-500 mt-1">Chất lượng kịch bản</p>
+        </div>
+
+        <div class="glass-panel p-5 rounded-xl border border-gray-800">
+            <div class="flex items-center justify-between text-gray-400 text-xs font-medium">
+                <span>TEST THẤT BẠI</span>
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
+            </div>
+            <p class="text-2xl font-bold text-red-400 mt-2">{{ failed_tests }}</p>
+            <p class="text-xs text-gray-500 mt-1">Cần xem lại</p>
+        </div>
+    </div>
+
+    <!-- AI Scraping and Test Runner Control Panel -->
+    <div class="glass-panel p-6 rounded-2xl border border-purple-500/30 bg-gradient-to-b from-purple-950/20 to-gray-950/40">
+        <h2 class="text-base font-bold text-white flex items-center gap-2 mb-2">
+            <i data-lucide="sparkles" class="w-5 h-5 text-purple-400"></i>
+            Bộ Điều Khiển AI & Playwright Tự Động Hóa
+        </h2>
+        <p class="text-xs text-gray-400 mb-4">
+            Nhập URL website mục tiêu. Hệ thống sẽ dùng Playwright Python cào DOM và gọi Google Gemini AI tự động sinh kịch bản test.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <i data-lucide="globe" class="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5"></i>
+                <input type="url" id="targetUrl" value="https://example.com" 
+                       placeholder="https://example.com"
+                       class="w-full bg-gray-900 border border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 transition">
+            </div>
+
+            <button id="btnAiAnalyze" onclick="handleAiAnalyze()" 
+                    class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 transition">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                <span id="btnAiText">AI Quét & Sinh Test</span>
+            </button>
+
+            <button id="btnRunTests" onclick="handleRunTests()" 
+                    class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition">
+                <i data-lucide="play" class="w-4 h-4"></i>
+                <span id="btnRunText">Chạy Tất Cả Tests</span>
+            </button>
+        </div>
+
+        <!-- Terminal Output / Status Alert -->
+        <div id="statusBox" class="hidden mt-4 p-4 rounded-xl border text-xs font-mono">
+        </div>
+    </div>
+
+    <!-- Test Cases Table -->
+    <div class="glass-panel rounded-2xl border border-gray-800 overflow-hidden">
+        <div class="p-5 border-b border-gray-800 flex items-center justify-between">
+            <h3 class="font-bold text-sm text-gray-200 flex items-center gap-2">
+                <i data-lucide="list-checks" class="w-4 h-4 text-purple-400"></i>
+                Danh Sách Test Cases Mới Nhất
+            </h3>
+            <a href="{% url 'testcases' %}" class="text-xs text-purple-400 hover:underline">Xem tất cả &rarr;</a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-gray-900/60 text-gray-400 uppercase tracking-wider border-b border-gray-800">
+                    <tr>
+                        <th class="py-3 px-4">Kịch Bản</th>
+                        <th class="py-3 px-4">CSS Selector</th>
+                        <th class="py-3 px-4">Hành Động</th>
+                        <th class="py-3 px-4">Mức Độ</th>
+                        <th class="py-3 px-4">Trạng Thái</th>
+                        <th class="py-3 px-4">Thời Gian</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800 text-gray-300" id="testCasesTableBody">
+                    {% for tc in test_cases %}
+                    <tr class="hover:bg-gray-800/40 transition">
+                        <td class="py-3 px-4 font-medium text-white">{{ tc.name }}</td>
+                        <td class="py-3 px-4 font-mono text-gray-400">{{ tc.selector }}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 rounded bg-gray-800 text-gray-300">{{ tc.action }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            {% if tc.severity == 'CRITICAL' %}
+                                <span class="text-red-400 font-semibold">CRITICAL</span>
+                            {% elif tc.severity == 'HIGH' %}
+                                <span class="text-amber-400 font-semibold">HIGH</span>
+                            {% else %}
+                                <span class="text-blue-400">MEDIUM</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4">
+                            {% if tc.status == 'PASSED' %}
+                                <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">PASSED</span>
+                            {% elif tc.status == 'FAILED' %}
+                                <span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-medium">FAILED</span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 font-medium">PENDING</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 font-mono">{{ tc.duration }}s</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-gray-500">
+                            Chưa có test case nào. Hãy nhập URL và bấm <strong>"AI Quét & Sinh Test"</strong> ở trên!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function handleAiAnalyze() {
+        const url = document.getElementById('targetUrl').value.trim();
+        if (!url) {
+            alert('Vui lòng nhập URL hợp lệ');
+            return;
+        }
+
+        const btn = document.getElementById('btnAiAnalyze');
+        const btnText = document.getElementById('btnAiText');
+        const statusBox = document.getElementById('statusBox');
+
+        btn.disabled = true;
+        btnText.innerText = "Playwright & AI đang cào...";
+        statusBox.className = "mt-4 p-4 rounded-xl border border-purple-500/40 bg-purple-950/30 text-purple-200 text-xs font-mono block";
+        statusBox.innerText = "🚀 Đang khởi động Playwright Chromium và gửi phần tử sang Gemini AI...";
+
+        try {
+            const res = await fetch("{% url 'api_ai_generate' %}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: url })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                statusBox.className = "mt-4 p-4 rounded-xl border border-emerald-500/40 bg-emerald-950/30 text-emerald-200 text-xs font-mono block";
+                statusBox.innerText = `✅ Thành công! Đã tự động sinh và lưu ${data.test_cases.length} test cases vào Django Database. Đang tải lại trang...`;
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                statusBox.className = "mt-4 p-4 rounded-xl border border-red-500/40 bg-red-950/30 text-red-200 text-xs font-mono block";
+                statusBox.innerText = `❌ Lỗi: ${data.error}`;
+            }
+        } catch (err) {
+            statusBox.className = "mt-4 p-4 rounded-xl border border-red-500/40 bg-red-950/30 text-red-200 text-xs font-mono block";
+            statusBox.innerText = `❌ Lỗi kết nối: ${err.message}`;
+        } finally {
+            btn.disabled = false;
+            btnText.innerText = "AI Quét & Sinh Test";
+        }
+    }
+
+    async function handleRunTests() {
+        const url = document.getElementById('targetUrl').value.trim();
+        const btn = document.getElementById('btnRunTests');
+        const btnText = document.getElementById('btnRunText');
+        const statusBox = document.getElementById('statusBox');
+
+        btn.disabled = true;
+        btnText.innerText = "Đang chạy Playwright...";
+        statusBox.className = "mt-4 p-4 rounded-xl border border-emerald-500/40 bg-emerald-950/30 text-emerald-200 text-xs font-mono block";
+        statusBox.innerText = "⚡ Playwright đang mở trình duyệt ảo và thực thi từng test case...";
+
+        try {
+            const res = await fetch("{% url 'api_run_tests' %}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: url })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                statusBox.className = "mt-4 p-4 rounded-xl border border-emerald-500/40 bg-emerald-950/30 text-emerald-200 text-xs font-mono block";
+                statusBox.innerText = `🎉 Hoàn thành kiểm thử! Kết quả: ${data.status}. Lịch sử đã được ghi nhận. Đang tải lại trang...`;
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                statusBox.className = "mt-4 p-4 rounded-xl border border-red-500/40 bg-red-950/30 text-red-200 text-xs font-mono block";
+                statusBox.innerText = `❌ Lỗi chạy test: ${data.error}`;
+            }
+        } catch (err) {
+            statusBox.className = "mt-4 p-4 rounded-xl border border-red-500/40 bg-red-950/30 text-red-200 text-xs font-mono block";
+            statusBox.innerText = `❌ Lỗi kết nối: ${err.message}`;
+        } finally {
+            btn.disabled = false;
+            btnText.innerText = "Chạy Tất Cả Tests";
+        }
+    }
+</script>
+{% endblock %}
